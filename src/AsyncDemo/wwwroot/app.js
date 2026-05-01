@@ -1,6 +1,7 @@
 const CELL_COUNT = 100;
 const RAM_CHIP_COUNT = 16;
-const ANIM_TARGET_MS = 3500;
+const ANIM_TARGET_MS = 2500;          // gerçek bench süresi animasyona scale edilir
+const ANIM_TARGET_MS_CACHED = 1400;   // cache hit'te daha kısa, daha snappy
 const ITERATIONS = 5;
 
 // Outer paralelliği sabit (1.000), chain (ardışık await derinliği)
@@ -222,7 +223,8 @@ function showBootInfo() {
 }
 
 async function runRace() {
-    runStatus.textContent = "bench çalışıyor… (her iki runtime sırayla)";
+    arena.classList.add("is-loading");      // fetch süresince hücre/chip pulse
+    runStatus.textContent = "ölçülüyor… (.NET 10 + .NET 11 paralel)";
     runStatus.className = "running";
 
     const url =
@@ -231,19 +233,21 @@ async function runRace() {
         `&iterations=${ITERATIONS}`;
     const r = await fetch(url, { method: "POST" });
     if (!r.ok) {
+        arena.classList.remove("is-loading");
         const txt = await r.text();
         throw new Error(`HTTP ${r.status}: ${txt.slice(0, 240)}`);
     }
     const data = await r.json();
 
-    runStatus.textContent = "yarış başlıyor…";
+    arena.classList.remove("is-loading");
+    runStatus.textContent = data.cacheHit ? "yarış başlıyor (cache)…" : "yarış başlıyor…";
     setLaneFw("net10", data.net10.frameworkDescription);
     setLaneFw("net11", data.net11.frameworkDescription);
 
     await raceAnimation(data);
 
     showResults(data);
-    runStatus.textContent = "tamamlandı";
+    runStatus.textContent = data.cacheHit ? "tamamlandı · cache" : "tamamlandı";
     runStatus.className = "done";
 }
 
@@ -269,7 +273,8 @@ function raceAnimation(data) {
     const t10 = data.net10.minElapsedMs;
     const t11 = data.net11.minElapsedMs;
     const slowest = Math.max(t10, t11);
-    const scale = ANIM_TARGET_MS / slowest;
+    const animBudget = data.cacheHit ? ANIM_TARGET_MS_CACHED : ANIM_TARGET_MS;
+    const scale = animBudget / slowest;
     const dur10 = t10 * scale;
     const dur11 = t11 * scale;
 

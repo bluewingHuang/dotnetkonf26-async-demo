@@ -526,13 +526,14 @@ body.modal-open { overflow: hidden; }
 
 .lane-grid {
     display: grid;
-    grid-template-columns: repeat(20, 1fr);
+    grid-template-columns: repeat(20, minmax(0, 1fr));
     gap: 4px;
     margin: 10px 0 18px;
     aspect-ratio: 20 / 5;
 }
 .cell {
     aspect-ratio: 1 / 1;
+    min-width: 0;
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.06);
     transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
@@ -546,6 +547,20 @@ body.modal-open { overflow: hidden; }
     box-shadow: 0 0 8px var(--net11-glow);
 }
 .cell.pop { transform: scale(1.25); }
+
+/* Loading state — bench fetch süresince hücre ve chip'ler nefes alır */
+.arena.is-loading .cell {
+    animation: arena-loading-pulse 1.4s ease-in-out infinite;
+}
+.arena.is-loading .ram-chip {
+    animation: arena-loading-pulse 1.6s ease-in-out infinite;
+}
+.arena.is-loading .lane-net10 .cell { animation-delay: calc(var(--i, 0) * 8ms); }
+.arena.is-loading .lane-net11 .cell { animation-delay: calc(var(--i, 0) * 8ms + 200ms); }
+@keyframes arena-loading-pulse {
+    0%, 100% { background: rgba(255, 255, 255, 0.05); }
+    50%      { background: rgba(255, 255, 255, 0.18); }
+}
 
 /* ============================================================
    RAM MODÜLÜ (DIMM stick görseli)
@@ -603,14 +618,16 @@ body.modal-open { overflow: hidden; }
 
 .ram-chips {
     display: grid;
-    grid-template-columns: repeat(16, 1fr);
+    grid-template-columns: repeat(16, minmax(0, 1fr));
     gap: 3px;
     height: 30px;
+    width: 100%;
     position: relative;
     z-index: 1;
 }
 
 .ram-chip {
+    min-width: 0;
     background:
         linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.4)),
         #0a1410;
@@ -855,7 +872,7 @@ body.modal-open { overflow: hidden; }
     .container { padding: 36px 18px 64px; }
     .arena { gap: 16px; }
     .lane { padding: 16px; }
-    .lane-grid { grid-template-columns: repeat(20, 1fr); }
+    .lane-grid { grid-template-columns: repeat(20, minmax(0, 1fr)); }
 }
 
 /* Mobil */
@@ -897,10 +914,11 @@ body.modal-open { overflow: hidden; }
     }
     .cta-meta { font-size: 13px; }
 
-    /* RAM modülü mobil ayarı — chip'ler ve pinler küçülsün */
-    .ram-stick { height: 56px; padding: 12px 8px 8px; }
+    /* RAM modülü mobil ayarı — 16 chip dar ekrana sığsın */
+    .ram-stick { height: 54px; padding: 12px 6px 8px; }
     .ram-chips { height: 24px; gap: 2px; }
     .ram-readout-value { font-size: 14px; }
+    .ram-label { right: 6px; }
 
     /* Modal mobilde tüm ekran */
     .modal { padding: 0; }
@@ -923,7 +941,7 @@ body.modal-open { overflow: hidden; }
     .lane-fw { font-size: 10px; max-width: 55%; }
 
     .lane-grid {
-        grid-template-columns: repeat(20, 1fr);
+        grid-template-columns: repeat(20, minmax(0, 1fr));
         gap: 3px;
         aspect-ratio: 20 / 6;
     }
@@ -956,11 +974,11 @@ body.modal-open { overflow: hidden; }
 
 /* Çok küçük telefonlar */
 @media (max-width: 380px) {
-    .lane-grid { grid-template-columns: repeat(16, 1fr); aspect-ratio: 16 / 6; }
+    .lane-grid { grid-template-columns: repeat(16, minmax(0, 1fr)); aspect-ratio: 16 / 6; }
     .hero h1 { font-size: 30px; }
-    .ram-chips { gap: 2px; }
-    .ram-stick { height: 52px; padding: 10px 6px 8px; }
-    .ram-label { font-size: 7px; }
+    .ram-chips { gap: 1.5px; }
+    .ram-stick { height: 50px; padding: 10px 4px 8px; }
+    .ram-label { font-size: 7px; right: 4px; }
 }
 
 /* Yatay mod telefonlar */

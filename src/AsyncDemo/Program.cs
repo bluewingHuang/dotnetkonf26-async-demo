@@ -60,11 +60,32 @@ namespace AsyncDemo
         private static readonly string Net10Exe = ResolveExe("net10.0");
         private static readonly string Net11Exe = ResolveExe("net11.0");
 
+        // (outer, chain, iterations) → result. ConferenceDemo'da aynı preset'e
+        // tekrar tekrar bakılıyor; ilk çalıştırmadan sonra cevaplar anlık döner.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedRun> _cache = new();
+        private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(15);
+        private static readonly bool CacheEnabled =
+            !string.Equals(Environment.GetEnvironmentVariable("BENCH_NO_CACHE"), "1", StringComparison.Ordinal);
+
         public async Task<RunPayload> RunAsync(int outerTasks, int chainDepth, int iterations, CancellationToken ct)
         {
-            // Run sequentially so the two processes do not contend for CPU during measurement.
-            var net10 = await ExecuteAsync(Net10Exe, outerTasks, chainDepth, iterations, ct);
-            var net11 = await ExecuteAsync(Net11Exe, outerTasks, chainDepth, iterations, ct);
+            var key = $"{outerTasks}-{chainDepth}-{iterations}";
+
+            if (CacheEnabled
+                && _cache.TryGetValue(key, out var cached)
+                && cached.ExpiresAt > DateTime.UtcNow)
+            {
+                return cached.Payload with { CacheHit = true };
+            }
+
+            // İki runtime'ı paralel başlat — DigitalOcean App Platform'da çoğu plan
+            // 1+ vCPU veriyor, paralel çalıştırınca toplam süre yarıya iniyor.
+            // CPU contention iki tarafta da eşit olduğundan göreceli fark korunur.
+            var task10 = ExecuteAsync(Net10Exe, outerTasks, chainDepth, iterations, ct);
+            var task11 = ExecuteAsync(Net11Exe, outerTasks, chainDepth, iterations, ct);
+            await Task.WhenAll(task10, task11);
+            var net10 = await task10;
+            var net11 = await task11;
 
             var speedup = net10.MinElapsedMs / net11.MinElapsedMs;
             var allocSavings = net10.MinAllocatedBytes == 0
@@ -74,7 +95,7 @@ namespace AsyncDemo
                 ? double.PositiveInfinity
                 : (double)net10.MinAllocatedBytes / net11.MinAllocatedBytes;
 
-            return new RunPayload(
+            var payload = new RunPayload(
                 OuterTasks: outerTasks,
                 ChainDepth: chainDepth,
                 TotalAwaits: (long)outerTasks * chainDepth,
@@ -83,9 +104,18 @@ namespace AsyncDemo
                 Net11: net11,
                 Speedup: speedup,
                 AllocationSavings: allocSavings,
-                AllocationRatio: allocRatio
+                AllocationRatio: allocRatio,
+                CacheHit: false
             );
+
+            if (CacheEnabled)
+            {
+                _cache[key] = new CachedRun(payload, DateTime.UtcNow.Add(CacheTtl));
+            }
+            return payload;
         }
+
+        private record CachedRun(RunPayload Payload, DateTime ExpiresAt);
 
         private static async Task<BenchmarkResult> ExecuteAsync(string exePath, int outer, int chain, int iterations, CancellationToken ct)
         {
@@ -198,5 +228,6 @@ namespace AsyncDemo
         BenchmarkResult Net11,
         double Speedup,
         double AllocationSavings,
-        double AllocationRatio);
+        double AllocationRatio,
+        bool CacheHit = false);
 }
