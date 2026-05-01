@@ -28,6 +28,7 @@ RUN case "${TARGETARCH:-amd64}" in \
 
 # Restore (cache-friendly: csproj layer first)
 COPY DotnetKonf2026-Async.sln ./
+COPY NuGet.config              ./
 COPY src/AsyncBench/AsyncBench.csproj AsyncBench/
 COPY src/AsyncDemo/AsyncDemo.csproj AsyncDemo/
 RUN RID=$(cat /tmp/rid) && \
