@@ -9,7 +9,12 @@
 #                   self-contained, so no .NET 11 runtime is required here.
 # =============================================================================
 
-ARG SDK_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:11.0-preview
+# Pin to a specific .NET 11 preview SDK so the build is reproducible and
+# does not race with NuGet.org availability of new preview runtime packages.
+# (The rolling "11.0-preview" tag advances the SDK before its matching
+# Microsoft.*Runtime packages are published to public feeds — that breaks
+# `dotnet restore` until the packages catch up.)
+ARG SDK_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:11.0.100-preview.3
 ARG ASPNET_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0
 
 # -----------------------------------------------------------------------------
