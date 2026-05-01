@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="author" content="Murat Dinç" />
+    <meta name="description" content="DotnetKonf 2026 canlı demo — .NET 10 ve .NET 11 async performansını yan yana ölçen interaktif benchmark. Murat Dinç tarafından hazırlandı." />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive" />
+    <meta name="bingbot" content="noindex, nofollow, noarchive" />
+    <meta name="referrer" content="no-referrer" />
+    <title>DotnetKonf 2026 — .NET 10 vs .NET 11 Async · by Murat Dinç</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <main class="container">
+        <header class="hero">
+            <div class="hero-eyebrow">
+                <span class="dot dot-pink"></span>
+                <span class="dot dot-cyan"></span>
+                DotnetKonf 2026 · canlı demo · <span class="eyebrow-author">by Murat Dinç</span>
+            </div>
+            <h1>
+                .NET 10 <span class="vs">vs</span> .NET 11
+                <small>async performans yarışı</small>
+            </h1>
+            <p class="hero-sub">
+                Aynı kaynak, iki farklı IL.
+                <strong data-current="outer">1.000</strong> paralel görev ×
+                <strong data-current="chain">10.000</strong> ardışık
+                <code>await</code> = <strong data-current="total">10.000.000</strong> await çağrısı.
+                .NET 10 her birinde async state machine'i heap'te box'lar; .NET 11 ise
+                <code>&lt;Features&gt;runtime-async=on&lt;/Features&gt;</code> ile state machine'i
+                stack'te tutar — heap dokunmaz.
+            </p>
+            <p class="hero-credit">
+                <strong>Murat Dinç</strong> tarafından DotnetKonf 2026 için hazırlandı.
+            </p>
+        </header>
+
+        <section class="workload-picker" aria-label="İş yükü seçimi">
+            <span class="workload-label">İş Yükü</span>
+            <div class="workload-chips" id="workload-chips" role="tablist"></div>
+        </section>
+
+        <section class="arena" id="arena" hidden>
+            <div class="lane lane-net10">
+                <div class="lane-head">
+                    <span class="lane-tag">.NET 10</span>
+                    <span class="lane-fw" data-fw="net10">—</span>
+                </div>
+                <div class="lane-grid" data-grid="net10"></div>
+
+                <div class="ram-module">
+                    <div class="ram-stick" data-ram="net10">
+                        <div class="ram-label">DIMM · HEAP</div>
+                        <div class="ram-chips" data-ram-chips="net10"></div>
+                        <div class="ram-notch"></div>
+                        <div class="ram-pins"></div>
+                    </div>
+                    <div class="ram-readout">
+                        <span class="ram-readout-label">tahsis edilen RAM</span>
+                        <span class="ram-readout-value" data-mem-value="net10">—</span>
+                    </div>
+                </div>
+
+                <div class="lane-stats">
+                    <div class="stat"><span class="stat-label">süre (min)</span><span class="stat-value" data-stat="net10-time">—</span></div>
+                    <div class="stat"><span class="stat-label">GC</span><span class="stat-value" data-stat="net10-gc">—</span></div>
+                </div>
+            </div>
+
+            <div class="vs-divider">
+                <div class="vs-pulse"></div>
+                <span>VS</span>
+            </div>
+
+            <div class="lane lane-net11">
+                <div class="lane-head">
+                    <span class="lane-tag">.NET 11</span>
+                    <span class="lane-fw" data-fw="net11">—</span>
+                </div>
+                <div class="lane-grid" data-grid="net11"></div>
+
+                <div class="ram-module">
+                    <div class="ram-stick" data-ram="net11">
+                        <div class="ram-label">DIMM · HEAP</div>
+                        <div class="ram-chips" data-ram-chips="net11"></div>
+                        <div class="ram-notch"></div>
+                        <div class="ram-pins"></div>
+                    </div>
+                    <div class="ram-readout">
+                        <span class="ram-readout-label">tahsis edilen RAM</span>
+                        <span class="ram-readout-value" data-mem-value="net11">—</span>
+                    </div>
+                </div>
+
+                <div class="lane-stats">
+                    <div class="stat"><span class="stat-label">süre (min)</span><span class="stat-value" data-stat="net11-time">—</span></div>
+                    <div class="stat"><span class="stat-label">GC</span><span class="stat-value" data-stat="net11-gc">—</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="results" id="results" hidden>
+            <div class="result-headline">
+                <span class="result-label">Kazanan:</span>
+                <span class="result-winner" id="winner">—</span>
+                <span class="result-sub" id="winner-sub">—</span>
+            </div>
+            <div class="bars">
+                <div class="bar-row">
+                    <div class="bar-title">toplam süre (min)</div>
+                    <div class="bar-track">
+                        <div class="bar bar-net10" data-bar="net10-time"><span class="bar-value">—</span></div>
+                        <div class="bar bar-net11" data-bar="net11-time"><span class="bar-value">—</span></div>
+                    </div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-title">tahsis edilen bellek</div>
+                    <div class="bar-track">
+                        <div class="bar bar-net10" data-bar="net10-alloc"><span class="bar-value">—</span></div>
+                        <div class="bar bar-net11" data-bar="net11-alloc"><span class="bar-value">—</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="cta-buttons">
+                <button id="run-btn" class="run-btn" data-state="idle">
+                    <span class="run-btn-shine"></span>
+                    <span class="run-btn-label">▶  Teste Başla</span>
+                </button>
+                <button id="show-code-btn" class="ghost-btn" type="button">
+                    <span class="ghost-btn-glyph">&lt;/&gt;</span>
+                    Kodu Görmek İçin Tıkla
+                </button>
+            </div>
+            <div class="cta-meta">
+                <span id="run-status">hazır</span>
+                <span class="sep">·</span>
+                <span data-current="summary">1.000 görev × 10.000 await × 5 iterasyon</span>
+            </div>
+        </section>
+
+        <footer class="foot">
+            <span class="foot-credit">© 2026 <strong>Murat Dinç</strong> · DotnetKonf 2026 demo</span>
+            <span class="sep">·</span>
+            <span id="boot-info">runtime info: yükleniyor…</span>
+        </footer>
+    </main>
+
+    <!-- KOD MODAL'I -->
+    <div class="modal" id="code-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-backdrop" data-modal-close></div>
+        <div class="modal-card" role="document">
+            <header class="modal-head">
+                <span class="window-dot red"></span>
+                <span class="window-dot yellow"></span>
+                <span class="window-dot green"></span>
+                <span class="modal-title" id="modal-title">AsyncBench / Program.cs</span>
+                <button class="modal-close" type="button" data-modal-close aria-label="Kapat">✕</button>
+            </header>
+            <pre id="source-code"><code>// kod yükleniyor...</code></pre>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

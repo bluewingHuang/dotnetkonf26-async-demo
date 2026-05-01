@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <TieredCompilation>true</TieredCompilation>
+  </PropertyGroup>
+
+  <!-- .NET 11'de Runtime Async (compiler-emits-no-state-machine) modunu aç -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <Features>runtime-async=on</Features>
+  </PropertyGroup>
+
+</Project>
