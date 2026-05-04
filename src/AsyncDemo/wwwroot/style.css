@@ -264,6 +264,90 @@ body {
 }
 .workload-chip.is-active .workload-chip-stats { color: var(--accent); }
 
+/* PROGRESS — fetch süresince "test devam ediyor" çubuğu */
+.progress {
+    margin: 24px auto 6px;
+    max-width: 720px;
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    backdrop-filter: blur(10px);
+}
+.progress[hidden] { display: none; }
+.progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+.progress-label {
+    color: var(--fg-dim);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+.progress-label::after {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    color: var(--accent);
+    animation: progress-dots 1.4s steps(4, end) infinite;
+}
+@keyframes progress-dots {
+    0%   { content: ""; }
+    25%  { content: "."; }
+    50%  { content: ".."; }
+    75%  { content: "..."; }
+    100% { content: ""; }
+}
+.progress-percent {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.progress-track {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+        var(--net10-soft) 0%,
+        var(--accent)     50%,
+        var(--net11-soft) 100%);
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.55);
+    transition: width 0.18s linear;
+    position: relative;
+    overflow: hidden;
+}
+.progress-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+    transform: translateX(-100%);
+    animation: progress-shine 1.6s ease-in-out infinite;
+}
+@keyframes progress-shine {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(220%); }
+}
+
+@media (max-width: 760px) {
+    .progress { margin: 18px 0 4px; padding: 14px 16px; border-radius: 12px; }
+    .progress-label { font-size: 12px; }
+    .progress-percent { font-size: 12px; }
+}
+
 /* MODAL — kod görüntüleme penceresi */
 .modal {
     position: fixed;

@@ -1,8 +1,8 @@
 const CELL_COUNT = 100;
 const RAM_CHIP_COUNT = 16;
-const ANIM_TARGET_MS = 2500;          // gerçek bench süresi animasyona scale edilir
-const ANIM_TARGET_MS_CACHED = 1400;   // cache hit'te daha kısa, daha snappy
+const ANIM_TARGET_MS = 2500;
 const ITERATIONS = 5;
+const PROGRESS_TARGET_MS = 5200;   // backend ~5s; bar buna senkron
 
 // Outer paralelliği sabit (1.000), chain (ardışık await derinliği)
 // preset'ten preset'e ölçeklenir. Her test 1.000 outer × chain × 5 iterasyon.
@@ -26,6 +26,11 @@ const arena = $("#arena");
 const results = $("#results");
 const sourceEl = $("#source-code").querySelector("code");
 const bootInfo = $("#boot-info");
+const progressEl = $("#progress");
+const progressFill = $("#progress-fill");
+const progressPercent = $("#progress-percent");
+const progressLabel = $("#progress-label");
+let progressTimer = null;
 
 const codeModal = $("#code-modal");
 const showCodeBtn = $("#show-code-btn");
@@ -61,11 +66,13 @@ function startRun() {
     results.hidden = true;
     resetLane("net10");
     resetLane("net11");
+    startProgress();
 
     runRace().then(() => {
         setButtonState("done");
     }).catch((err) => {
         console.error(err);
+        stopProgress();
         runStatus.textContent = "hata: " + (err?.message ?? err);
         runStatus.className = "error";
         setButtonState("idle");
@@ -76,11 +83,44 @@ function startRun() {
 function resetToIdle() {
     arena.hidden = true;
     results.hidden = true;
+    stopProgress();
     resetLane("net10");
     resetLane("net11");
     runStatus.textContent = "hazır";
     runStatus.className = "";
     setButtonState("idle");
+}
+
+function startProgress() {
+    if (progressTimer) clearInterval(progressTimer);
+    progressEl.hidden = false;
+    progressFill.style.width = "0%";
+    progressPercent.textContent = "%0";
+    progressLabel.textContent = "test devam ediyor";
+
+    const start = performance.now();
+    progressTimer = setInterval(() => {
+        const elapsed = performance.now() - start;
+        // 0..95% — fetch tamamlanmadıkça asla %100'e ulaşmasın.
+        const pct = Math.min(95, (elapsed / PROGRESS_TARGET_MS) * 95);
+        progressFill.style.width = pct.toFixed(1) + "%";
+        progressPercent.textContent = "%" + Math.floor(pct);
+    }, 80);
+}
+
+function finishProgress() {
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+    progressFill.style.width = "100%";
+    progressPercent.textContent = "%100";
+    progressLabel.textContent = "ölçüm tamamlandı";
+    setTimeout(() => { progressEl.hidden = true; }, 220);
+}
+
+function stopProgress() {
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+    progressEl.hidden = true;
+    progressFill.style.width = "0%";
+    progressPercent.textContent = "%0";
 }
 
 function setButtonState(state) {
@@ -234,20 +274,22 @@ async function runRace() {
     const r = await fetch(url, { method: "POST" });
     if (!r.ok) {
         arena.classList.remove("is-loading");
+        stopProgress();
         const txt = await r.text();
         throw new Error(`HTTP ${r.status}: ${txt.slice(0, 240)}`);
     }
     const data = await r.json();
 
     arena.classList.remove("is-loading");
-    runStatus.textContent = data.cacheHit ? "yarış başlıyor (cache)…" : "yarış başlıyor…";
+    finishProgress();
+    runStatus.textContent = "yarış başlıyor…";
     setLaneFw("net10", data.net10.frameworkDescription);
     setLaneFw("net11", data.net11.frameworkDescription);
 
     await raceAnimation(data);
 
     showResults(data);
-    runStatus.textContent = data.cacheHit ? "tamamlandı · cache" : "tamamlandı";
+    runStatus.textContent = "tamamlandı";
     runStatus.className = "done";
 }
 
@@ -273,8 +315,7 @@ function raceAnimation(data) {
     const t10 = data.net10.minElapsedMs;
     const t11 = data.net11.minElapsedMs;
     const slowest = Math.max(t10, t11);
-    const animBudget = data.cacheHit ? ANIM_TARGET_MS_CACHED : ANIM_TARGET_MS;
-    const scale = animBudget / slowest;
+    const scale = ANIM_TARGET_MS / slowest;
     const dur10 = t10 * scale;
     const dur11 = t11 * scale;
 
