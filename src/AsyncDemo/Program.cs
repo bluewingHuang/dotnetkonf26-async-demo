@@ -57,6 +57,9 @@ namespace AsyncDemo
             }
             """;
 
+        private static readonly string BenchFileName =
+            OperatingSystem.IsWindows() ? "AsyncBench.exe" : "AsyncBench";
+
         private static readonly string Net10Exe = ResolveExe("net10.0");
         private static readonly string Net11Exe = ResolveExe("net11.0");
 
@@ -143,7 +146,10 @@ namespace AsyncDemo
             psi.ArgumentList.Add(chain.ToString());
             psi.ArgumentList.Add("--iterations");
             psi.ArgumentList.Add(iterations.ToString());
-            psi.Environment["DOTNET_ROLL_FORWARD"] = "Disable";
+            // Self-contained benches in Docker pin an exact runtime; local framework-dependent
+            // builds may only have a newer patch (e.g. 10.0.4) on the machine.
+            if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASYNCBENCH_ROOT")))
+                psi.Environment["DOTNET_ROLL_FORWARD"] = "Disable";
             psi.Environment["DOTNET_TieredPGO"] = "1";
 
             using var proc = Process.Start(psi) ?? throw new InvalidOperationException($"Failed to start {exePath}");
@@ -181,15 +187,15 @@ namespace AsyncDemo
             var candidates = new List<string>();
             if (!string.IsNullOrWhiteSpace(envRoot))
             {
-                candidates.Add(Path.GetFullPath(Path.Combine(envRoot, tfm, "AsyncBench")));
+                candidates.Add(Path.GetFullPath(Path.Combine(envRoot, tfm, BenchFileName)));
             }
             candidates.AddRange(new[]
             {
                 // Production / container layout: bench published next to the demo app.
-                Path.GetFullPath(Path.Combine(here, "AsyncBench", tfm, "AsyncBench")),
+                Path.GetFullPath(Path.Combine(here, "AsyncBench", tfm, BenchFileName)),
                 // Local dev layout: solution folder one level up, bench builds in its own bin.
-                Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "AsyncBench", "bin", "Release", tfm, "AsyncBench")),
-                Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "AsyncBench", "bin", "Debug", tfm, "AsyncBench")),
+                Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "AsyncBench", "bin", "Release", tfm, BenchFileName)),
+                Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "AsyncBench", "bin", "Debug", tfm, BenchFileName)),
             });
 
             foreach (var c in candidates)
